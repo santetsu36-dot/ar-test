@@ -1,54 +1,65 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
     <meta charset="utf-8">
-    <title>三鉄 震災学習ARツアー</title>
+    <title>三鉄 震災学習AR V3</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <script>
-        AFRAME.registerComponent('tsunami-anim', {
+        AFRAME.registerComponent('tsunami-v3', {
             init: function () {
-                this.maxH = 10; // 津波の高さ(m)
-                this.duration = 15000; // 上がる時間(15秒)
+                this.maxH = 10;
+                this.duration = 20000; // 20秒かけて絶望感を与える
                 this.start = Date.now();
-                this.active = false;
+                this.isRising = false;
+                
+                // 画面タップでスタート（音再生のため）
+                window.addEventListener('click', () => { this.isRising = true; });
             },
             tick: function () {
-                // マーカーが見えている時だけ動かす
-                if (!this.el.parentEl.object3D.visible) return;
+                if (!this.isRising || !this.el.parentEl.object3D.visible) return;
                 
                 let elapsed = Date.now() - this.start;
                 let progress = Math.min(elapsed / this.duration, 1);
                 let currentH = progress * this.maxH;
 
-                // 水（青い箱）のサイズと位置を更新
-                this.el.setAttribute('scale', {x: 30, y: currentH, z: 30});
-                this.el.setAttribute('position', {x: (Math.random()-0.5)*0.1, y: currentH/2, z: (Math.random()-0.5)*0.1});
-
-                // テキストの更新
-                let txt = document.querySelector('#status-text');
-                txt.setAttribute('value', 'Current Height: ' + currentH.toFixed(1) + 'm');
-                txt.setAttribute('position', {x: 0, y: currentH + 0.5, z: 0});
+                // 濁流の揺れとせり上がり
+                let wobble = Math.sin(Date.now() * 0.002) * 0.1;
+                this.el.setAttribute('scale', {x: 50, y: currentH + wobble, z: 50});
+                this.el.setAttribute('position', {x: 0, y: (currentH + wobble) / 2, z: 0});
                 
-                // 1.6mを超えたら警告
-                if (currentH > 1.6) {
-                    txt.setAttribute('color', '#ff0000');
+                // 画面全体の振動（スマホを揺らす演出）
+                if (currentH > 2) {
+                   document.querySelector('a-scene').setAttribute('position', `${Math.random()*0.05} 0 0`);
                 }
             }
         });
     </script>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-assets>
+            <audio id="rumble" src="https://actions.google.com/sounds/v1/ambiences/earthquake_rumble.ogg" response-type="arraybuffer"></audio>
+        </a-assets>
+
         <a-marker preset="hiro">
-            <a-box tsunami-anim material="color: #0044aa; opacity: 0.7; transparent: true; side: double;"></a-box>
-            
-            <a-text id="status-text" value="Start..." align="center" color="#ffffff" scale="2 2 2" rotation="-90 0 0"></a-text>
-            
-            <a-plane rotation="-90 0 0" width="4" height="4" material="color: #ffffff; opacity: 0.2;"></a-plane>
+            <a-box tsunami-v3 
+                   material="color: #3d2b1f; opacity: 0.9; transparent: true; roughness: 0.3; metalness: 0.2;"
+                   sound="src: #rumble; autoplay: false; loop: true; volume: 5;">
+            </a-box>
+
+            <a-entity position="0 11 0" rotation="-90 0 0">
+                <a-plane width="4" height="1" color="black"></a-plane>
+                <a-text value="TSUNAMI LEVEL: 10m\nEVACUATE IMMEDIATELY" align="center" color="red" width="10"></a-text>
+            </a-entity>
         </a-marker>
+        
         <a-entity camera></a-entity>
     </a-scene>
+    
+    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; color: white; font-family: sans-serif; background: rgba(0,0,0,0.5);">
+        画面をタップしてAR体験を開始
+    </div>
 </body>
 </html>
