@@ -2,64 +2,59 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>三鉄 震災学習AR V3</title>
+    <title>三鉄 震災学習AR V3.1</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <script>
-        AFRAME.registerComponent('tsunami-v3', {
+        AFRAME.registerComponent('tsunami-auto', {
             init: function () {
-                this.maxH = 10;
-                this.duration = 20000; // 20秒かけて絶望感を与える
+                this.maxH = 10; 
+                this.duration = 15000; // 15秒で上昇
                 this.start = Date.now();
-                this.isRising = false;
-                
-                // 画面タップでスタート（音再生のため）
-                window.addEventListener('click', () => { this.isRising = true; });
+                // 初期状態をペチャンコ（高さ0）にしておく
+                this.el.setAttribute('scale', {x: 40, y: 0.001, z: 40});
             },
             tick: function () {
-                if (!this.isRising || !this.el.parentEl.object3D.visible) return;
+                if (!this.el.parentEl.object3D.visible) return;
                 
                 let elapsed = Date.now() - this.start;
                 let progress = Math.min(elapsed / this.duration, 1);
                 let currentH = progress * this.maxH;
 
-                // 濁流の揺れとせり上がり
-                let wobble = Math.sin(Date.now() * 0.002) * 0.1;
-                this.el.setAttribute('scale', {x: 50, y: currentH + wobble, z: 50});
-                this.el.setAttribute('position', {x: 0, y: (currentH + wobble) / 2, z: 0});
+                // 水面の波打ち演出
+                let wave = Math.sin(Date.now() * 0.002) * 0.1;
                 
-                // 画面全体の振動（スマホを揺らす演出）
+                // サイズと位置を更新
+                this.el.setAttribute('scale', {x: 40, y: currentH + wave, z: 40});
+                this.el.setAttribute('position', {x: 0, y: (currentH + wave) / 2, z: 0});
+
+                // テキスト更新
+                let hud = document.querySelector('#hud');
+                hud.setAttribute('value', 'TSUNAMI LEVEL: ' + currentH.toFixed(1) + 'm');
+                
+                // 危険度で文字色を変更
                 if (currentH > 2) {
-                   document.querySelector('a-scene').setAttribute('position', `${Math.random()*0.05} 0 0`);
+                    hud.setAttribute('color', '#FF0000');
                 }
             }
         });
     </script>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-assets>
-            <audio id="rumble" src="https://actions.google.com/sounds/v1/ambiences/earthquake_rumble.ogg" response-type="arraybuffer"></audio>
-        </a-assets>
-
         <a-marker preset="hiro">
-            <a-box tsunami-v3 
-                   material="color: #3d2b1f; opacity: 0.9; transparent: true; roughness: 0.3; metalness: 0.2;"
-                   sound="src: #rumble; autoplay: false; loop: true; volume: 5;">
+            <a-box tsunami-auto 
+                   material="color: #8b4513; opacity: 0.8; transparent: true; roughness: 0.3; metalness: 0.1;">
             </a-box>
 
-            <a-entity position="0 11 0" rotation="-90 0 0">
-                <a-plane width="4" height="1" color="black"></a-plane>
-                <a-text value="TSUNAMI LEVEL: 10m\nEVACUATE IMMEDIATELY" align="center" color="red" width="10"></a-text>
-            </a-entity>
+            <a-box position="0 3 0" width="10" height="0.1" depth="10" material="color: red; opacity: 0.5;"></a-box>
+            <a-text value="1F LEVEL (3m)" position="6 3.2 0" color="white" scale="1.5 1.5 1.5" rotation="-90 0 0"></a-text>
+
+            <a-text id="hud" value="0.0m" position="0 0.5 0" align="center" color="#FFFF00" scale="4 4 4" rotation="-90 0 0"></a-text>
         </a-marker>
         
         <a-entity camera></a-entity>
     </a-scene>
-    
-    <div style="position: fixed; bottom: 20px; width: 100%; text-align: center; color: white; font-family: sans-serif; background: rgba(0,0,0,0.5);">
-        画面をタップしてAR体験を開始
-    </div>
 </body>
 </html>
