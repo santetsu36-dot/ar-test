@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>三鉄 震災学習ARツアー</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <script>
+        AFRAME.registerComponent('tsunami-anim', {
+            init: function () {
+                this.maxH = 10; // 津波の高さ(m)
+                this.duration = 15000; // 上がる時間(15秒)
+                this.start = Date.now();
+                this.active = false;
+            },
+            tick: function () {
+                // マーカーが見えている時だけ動かす
+                if (!this.el.parentEl.object3D.visible) return;
+                
+                let elapsed = Date.now() - this.start;
+                let progress = Math.min(elapsed / this.duration, 1);
+                let currentH = progress * this.maxH;
+
+                // 水（青い箱）のサイズと位置を更新
+                this.el.setAttribute('scale', {x: 30, y: currentH, z: 30});
+                this.el.setAttribute('position', {x: (Math.random()-0.5)*0.1, y: currentH/2, z: (Math.random()-0.5)*0.1});
+
+                // テキストの更新
+                let txt = document.querySelector('#status-text');
+                txt.setAttribute('value', 'Current Height: ' + currentH.toFixed(1) + 'm');
+                txt.setAttribute('position', {x: 0, y: currentH + 0.5, z: 0});
+                
+                // 1.6mを超えたら警告
+                if (currentH > 1.6) {
+                    txt.setAttribute('color', '#ff0000');
+                }
+            }
+        });
+    </script>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-marker preset="hiro">
+            <a-box tsunami-anim material="color: #0044aa; opacity: 0.7; transparent: true; side: double;"></a-box>
+            
+            <a-text id="status-text" value="Start..." align="center" color="#ffffff" scale="2 2 2" rotation="-90 0 0"></a-text>
+            
+            <a-plane rotation="-90 0 0" width="4" height="4" material="color: #ffffff; opacity: 0.2;"></a-plane>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+</body>
+</html>
